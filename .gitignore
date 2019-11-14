@@ -1,0 +1,7 @@
+*.pyc
+__pycache__/*
+.python-version
+*.egg-info/
+requirements.txt
+*.log
+*.log.[0-9]
