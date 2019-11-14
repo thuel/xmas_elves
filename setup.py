@@ -16,7 +16,10 @@ setup(name='xmas_elves',
         # List of modules which are imported by the project.
         # But not core modules like subprocess or os.
         'argparse',
-        'logging'
+        'logging',
+        'networkx',
+        'openpyxl',
+
       ],
       dependency_links=[
           # e.g. "git+https://bitbucket.org/thuel/mail_py.git@0.2.2#egg=mail_py-0.2.2"
@@ -25,7 +28,7 @@ setup(name='xmas_elves',
       zip_safe=False,
       entry_points={
         'console_scripts': [
-          'xmas_elves = xmas_elves.xmas_elves:main'
+          'xmaselves = xmas_elves.xmaselves:main'
         ]
       },
       data_files=[

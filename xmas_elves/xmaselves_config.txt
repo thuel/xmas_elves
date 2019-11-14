@@ -1,0 +1,5 @@
+[Email]
+smtp_server = server.address.tld
+smtp_port = 465
+sender_password = secret_password_here
+sender_address = some.mail@smtp.tld
