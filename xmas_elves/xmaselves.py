@@ -38,11 +38,12 @@ import smtplib
 from textwrap import dedent
 from pprint import pprint
 from argparse import ArgumentParser
+from configparser import ConfigParser
 from pathlib import Path
 from collections import Counter, defaultdict
 from email.message import EmailMessage
 
-from pyTools.user_dialog_prompts import yes_or_no
+from .user_dialog_prompts import yes_or_no
 
 logger = logging.getLogger(__name__)
 logger_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -50,7 +51,7 @@ stream_formatter = logging.Formatter(logger_format)
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(stream_formatter)
 logger.addHandler(stream_handler)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 #Add possibility to import from excel
 
@@ -68,15 +69,15 @@ class Elf:
         self.email = email
         self.partner = partner
         self.giftee = giftee
-    
+
     def __str__(self):
         return f"Elf(name={self.name}, email={self.email}, partner={self.partner})"
-    
+
     def __repr__(self):
         return str(self)
 
     def __iter__(self):
-        return (self.name, self.email, self.partner, self.giftee)
+        yield from (self.name, self.email, self.partner, self.giftee)
 
 def nodes_from_string(string):
     """
@@ -103,11 +104,11 @@ def nodes_from_excel(filename):
     wb = xl.load_workbook(filename)
     ws = wb.active
     data = [
-        "{},".format(",".join((value for value in row)))
+        [value for value in row]
         for row in ws.values
     ]
     return create_nodes(data)
-        
+
 def create_nodes(data_list):
     """
     Factory method to create Elf object nodes
@@ -115,7 +116,7 @@ def create_nodes(data_list):
     """
     return [
         Elf(name, email, partner, None)
-        for name, email, partner, _ in data_list
+        for name, email, partner, *_ in data_list
     ]
 
 def create_edges(nodes, allow_partner=False):
@@ -176,7 +177,7 @@ def xmas_elves(original_graph):
             chosen_wichtel = random.choice(list(graph.predecessors(current_node)))
             chosen_wichtel.giftee = current_node
             obsolete_ingoing = [
-                node 
+                node
                 for node in graph.predecessors(current_node)
                 if node != chosen_wichtel
             ]
@@ -247,15 +248,20 @@ def parse_args():
             each elf giftee combination.
             """)
         )
-      
+
     return parser.parse_args()
 
 def create_nodes_from_type(string):
-    print(string)
     if Path(string).exists():
+        logger.debug("Path.exists() in create_nodes_from_type: {}".format(Path(string).exists()))
         ext = Path(string).suffix
-        if ext in ['xls', 'xlsx']:
-            pass
+        if ext in ['.xls', '.xlsx']:
+            logger.debug("going to return nodes_from_excel")
+            try:
+                return nodes_from_excel(string)
+            except Exception as e:
+                raise e
+                #("Couldn't parse excel file successfully.")
         else:
             try:
                 return nodes_from_csv(string)
@@ -267,12 +273,19 @@ def create_nodes_from_type(string):
             return nodes_from_string(string)
         except Exception as e:
                 raise e
-                #("Couldn't parse the string successfully.")        
+                #("Couldn't parse the string successfully.")
 
 def parse_mail_config(configfile):
-    parser = configparser.ConfigParser()
+    parser = ConfigParser()
     parser.read(configfile)
     return dict(parser['Email'])
+
+def mail_html_text(text):
+    text = text.replace('\n\n','\n')
+    return "".join([
+        f'<p>{line}</p>' if line != '' else '</br>'
+        for line in text.split('\n')
+    ])
 
 def mail_text(reciever, giftee):
     return dedent("""\
@@ -297,24 +310,24 @@ def mail_messages(graph, sender):
     for node in graph.nodes:
         name, email, _, giftee = node
         msg = EmailMessage()
-        msg['Subject'] = "Wichtelauslosung {}".format(datatime.date().year)
+        msg['Subject'] = "Wichtelauslosung {}".format(datetime.date.today().year)
         msg['From'] = sender
         msg['To'] = email
-        content = mail_text(name, giftee)
+        content = mail_text(name, giftee.name)
         msg.set_content(content)
-        msg.add_alternative(content, subtype='html')
-        msgs.append(msgs)
+        msg.add_alternative(mail_html_text(content), subtype='html')
         yield msg
-    
+
 def send_xmas_mails(config, graph):
     SMTP_SERVER = config['smtp_server']
-    SMTP_PORT = config['smtp_port']
-    SENDER_ADDRESS = config['smtp_server']
-    SENDER_PASSWORD = config['smtp_server']
+    SMTP_PORT = int(config['smtp_port'])
+    SENDER_ADDRESS = config['sender_address']
+    SENDER_PASSWORD = config['sender_password']
     for msg in mail_messages(graph, SENDER_ADDRESS):
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as smtp:
+        with smtplib.SMTP("{}:{}".format(SMTP_SERVER, SMTP_PORT)) as smtp:
             smtp.ehlo()
-            smtp.login(SENDER_ADDRESS, SMTP_PASSWORD)
+            smtp.starttls()
+            smtp.login(SENDER_ADDRESS, SENDER_PASSWORD)
             smtp.send_message(msg)
         time.sleep(2)
 
@@ -324,7 +337,7 @@ def draw_graph(graph):
     plt.subplot(111)
     nx.draw(graph, labels=labels)
     plt.show()
-    
+
 def main():
     args = parse_args()
     nodes = create_nodes_from_type(args.personsource)
@@ -339,14 +352,18 @@ def main():
         for line in message_texts:
             print(line.replace("\n"," "))
     else:
-        nx.write_gpickle(solved_graph, 'xmaselves_today.gpickle')
+        date = datetime.date.today()
+        persons_path = Path(args.personsource)
+        persons_name = persons_path.name
+        filename = "{}/{}-{}.gpickle".format(persons_path.parent, date, persons_name)
+        nx.write_gpickle(solved_graph, filename)
         if yes_or_no("Really send e-mails?"):
             mail_config = parse_mail_config(args.mailconfig)
             send_xmas_mails(mail_config, solved_graph)
         else:
             print("Not sending e-mails for the solved graph")
             draw_graph(solved_graph)
-            
+
 
     if args.stats: # and graph not loaded from file
         #Do some statistics with the graph:
@@ -355,7 +372,7 @@ def main():
             g = xmas_elves(graph)
             for node in g.nodes:
                 all_dict[node.name].append(node.giftee.name)
-                
+
         res = {
             key: Counter(value)
             for key, value in all_dict.items()
@@ -366,7 +383,7 @@ def main():
             print("{: <9s}\t{}".format(key, values))
         """
         pprint(res)
-    
+
 if __name__ == "__main__":
 
     main()
@@ -391,4 +408,4 @@ if __name__ == "__main__":
     #Create a directed graph
     graph = nx.from_edgelist(edges, nx.DiGraph)
 
-    
+
