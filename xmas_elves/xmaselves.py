@@ -338,6 +338,26 @@ def draw_graph(graph):
     nx.draw(graph, labels=labels)
     plt.show()
 
+def resend_mail_for_node(filename, nodename, mailconfig):
+    """
+    Resend the mail for one Node from a solved graph stored as gpickle.
+
+    To be used, by importing the module in an interpreter and providing
+    the paramters necessairy.
+
+    filename: path to stored gpickle graph
+    nodename: name of the elf to send the mail again
+    mailconfig: path to the mail configuration file
+    """
+    solved_graph = nx.read_gpickle('2019-11-15-wichtel_gmatt.xlsx.gpickle')
+    for node in solved_graph:
+        if node.name == nodename:
+            wanted_node = node
+    new_graph = nx.DiGraph()
+    new_graph.add_node(wanted_node)
+    mail_config = parse_mail_config(mailconfig)
+    send_xmas_mails(mail_config, new_graph)
+
 def main():
     args = parse_args()
     nodes = create_nodes_from_type(args.personsource)
