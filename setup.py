@@ -6,23 +6,20 @@ def readme():
 
 setup(name='xmas_elves',
       version='0.1',
-      description='Description here...',
+      description='Randomly assign all persons of a group to one of the other persons as their x-mas elves.',
       long_description=readme(),
       url='',
-      author='Lukas Steffen', #Default: 'Lukas Steffen',
-      author_email='lukas@steffen-steffen.ch', #Default: 'lukas@steffen-steffen.ch',
-      license='MIT', #Default: MIT
+      author='Lukas Steffen', 
+      author_email='lukas@steffen-steffen.ch', 
+      license='MIT', 
       install_requires=[
-        # List of modules which are imported by the project.
-        # But not core modules like subprocess or os.
         'argparse',
         'logging',
         'networkx',
         'openpyxl',
-
       ],
       dependency_links=[
-          # e.g. "git+https://bitbucket.org/thuel/mail_py.git@0.2.2#egg=mail_py-0.2.2"
+          
       ],
       packages=find_packages(),
       zip_safe=False,
@@ -32,7 +29,7 @@ setup(name='xmas_elves',
         ]
       },
       data_files=[
-          # e.g. ('/some/path/', 'some_file')
+          
       ]
      )
 
