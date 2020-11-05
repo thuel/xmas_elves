@@ -311,8 +311,12 @@ def mail_html_text(text):
 
 
 def mail_text(reciever, giftee):
+    year = datetime.date.today().year
     return dedent("""\
         Hallo {},
+
+        Weihnachten {} steht vor der Tür und ich wurde gebeten, die
+        Wichtelauslosung zu starten.
 
         Du bist das Wichteli von {}. Vielen Dank, dass du mitmachst!
 
@@ -320,7 +324,7 @@ def mail_text(reciever, giftee):
 
         Liebe Grüsse
         Dein automatischer Wichtler
-        """).format(reciever, giftee)
+        """).format(reciever, year, giftee)
 
 
 def mail_texts(graph):
@@ -457,7 +461,7 @@ if __name__ == "__main__":
 
     # prepare nodes
     nodes = nodes_from_string(csv_text)
-    #nodes = nodes_from_csv('xmaselves_persons.txt')
+    # nodes = nodes_from_csv('xmaselves_persons.txt')
     # prepare edges
     edges = create_edges(nodes)
     # Create a directed graph
