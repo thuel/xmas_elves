@@ -5,3 +5,6 @@ __pycache__/*
 requirements.txt
 *.log
 *.log.[0-9]
+.envrc
+build/
+dist/
